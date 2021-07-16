@@ -16,9 +16,9 @@ namespace ServarrAPI.Release.Github
 {
     public class GithubReleaseSource : ReleaseSourceBase
     {
-        private static readonly Regex ReleaseFeaturesGroup = new Regex(@"\*\s+[0-9a-f]{40}\s+New:\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
+        private static readonly Regex ReleaseFeaturesGroup = new Regex(@"\*\s+[0-9a-f]{40}\s+(?:New:|\(?feat\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
 
-        private static readonly Regex ReleaseFixesGroup = new Regex(@"\*\s+[0-9a-f]{40}\s+Fixed:\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
+        private static readonly Regex ReleaseFixesGroup = new Regex(@"\*\s+[0-9a-f]{40}\s+(?:Fix(?:ed)?:|\(?fix\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled | RegexOptions.Multiline);
 
         private readonly Config _config;
         private readonly IUpdateService _updateService;

@@ -22,8 +22,8 @@ namespace ServarrAPI.Release.Azure
     {
         private readonly string[] _packageArtifactNames = { "Packages", "WindowsInstaller" };
 
-        private static readonly Regex ReleaseFeaturesGroup = new Regex(@"^New:\s*(?<text>.*?)\r*$", RegexOptions.Compiled);
-        private static readonly Regex ReleaseFixesGroup = new Regex(@"^Fixed:\s*(?<text>.*?)\r*$", RegexOptions.Compiled);
+        private static readonly Regex ReleaseFeaturesGroup = new Regex(@"^(?:New:|\(?feat\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled);
+        private static readonly Regex ReleaseFixesGroup = new Regex(@"^(?:Fix(?:ed)?:|\(?fix\)?.*:)\s*(?<text>.*?)\r*$", RegexOptions.Compiled);
 
         private static int? _lastBuildId;
 
