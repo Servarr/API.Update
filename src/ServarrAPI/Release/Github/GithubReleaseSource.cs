@@ -41,7 +41,8 @@ namespace ServarrAPI.Release.Github
         {
             var updated = new HashSet<string>();
 
-            var releases = (await _gitHubClient.Repository.Release.GetAll(_config.Project, _config.Project)).ToArray();
+            var githubOrg = _config.GithubOrg ?? _config.Project;
+            var releases = (await _gitHubClient.Repository.Release.GetAll(githubOrg, _config.Project)).ToArray();
             var validReleases = releases
                 .Where(r => r.TagName.StartsWith("v") && VersionUtil.IsValid(r.TagName.Substring(1)))
                 .Take(3)

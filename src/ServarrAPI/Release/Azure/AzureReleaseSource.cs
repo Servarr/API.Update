@@ -27,7 +27,7 @@ namespace ServarrAPI.Release.Azure
 
         private static int? _lastBuildId;
 
-        private readonly int[] _buildPipelines = new int[] { 1 };
+        private readonly int[] _buildPipelines;
 
         private readonly Config _config;
         private readonly IUpdateService _updateService;
@@ -47,7 +47,10 @@ namespace ServarrAPI.Release.Azure
             _updateFileService = updateFileService;
             _config = config.Value;
 
-            _connection = new VssConnection(new Uri($"https://dev.azure.com/{_config.Project}"), new VssBasicCredential());
+            var azureOrg = _config.AzureOrg ?? _config.Project;
+            _buildPipelines = new int[] { _config.AzurePipelineId > 0 ? _config.AzurePipelineId : 1 };
+
+            _connection = new VssConnection(new Uri($"https://dev.azure.com/{azureOrg}"), new VssBasicCredential());
             _githubClient = new GitHubClient(new ProductHeaderValue("ServarrAPI"));
             _httpClient = new HttpClient();
 
@@ -106,7 +109,8 @@ namespace ServarrAPI.Release.Azure
                         continue;
                     }
 
-                    var pr = await _githubClient.PullRequest.Get(_config.Project, _config.Project, prNum).ConfigureAwait(false);
+                    var githubOrg = _config.GithubOrg ?? _config.Project;
+                    var pr = await _githubClient.PullRequest.Get(githubOrg, _config.Project, prNum).ConfigureAwait(false);
 
                     if (pr.Head.Repository.Fork)
                     {
