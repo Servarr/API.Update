@@ -77,6 +77,7 @@ namespace ServarrAPI.Controllers.Update
                                              [FromQuery(Name = "runtime")] Runtime runtime,
                                              [FromQuery(Name = "runtimeVer")] string urlRuntimeVersion,
                                              [FromQuery(Name = "arch")] Architecture arch,
+                                             [FromQuery(Name = "includeMajorVersion")] bool includeMajorVersion = false,
                                              [FromQuery(Name = "dbType")] string dbType = "SQLite",
                                              [FromQuery(Name = "active")] bool activeInstall = true)
         {
@@ -120,7 +121,7 @@ namespace ServarrAPI.Controllers.Update
                     });
             }
 
-            var files = await _updateFileService.Find(updateBranch, operatingSystem, runtime, arch, false, 1, urlVersion, urlRuntimeVersion);
+            var files = await _updateFileService.Find(updateBranch, operatingSystem, runtime, arch, false, 1, urlVersion, urlRuntimeVersion, !includeMajorVersion);
 
             var updateFile = files.FirstOrDefault();
 

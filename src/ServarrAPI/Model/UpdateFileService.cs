@@ -12,7 +12,7 @@ namespace ServarrAPI.Model
     {
         Task<UpdateFileEntity> Insert(UpdateFileEntity model);
         Task<UpdateFileEntity> Find(string version, string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer);
-        Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer, int count, string installedVersion = null, string runtimeVersion = null);
+        Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer, int count, string installedVersion = null, string runtimeVersion = null, bool excludeMajorVersions = false);
     }
 
     public class UpdateFileService : IUpdateFileService
@@ -45,12 +45,12 @@ namespace ServarrAPI.Model
             return _repo.Find(version, mappedBranch, os, runtime, arch, installer);
         }
 
-        public Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer, int count, string installedVersion = null, string runtimeVersion = null)
+        public Task<List<UpdateFileEntity>> Find(string branch, OperatingSystem os, Runtime runtime, Architecture arch, bool installer, int count, string installedVersion = null, string runtimeVersion = null, bool excludeMajorVersions = false)
         {
             runtime = SetRuntime(runtime);
             arch = SetArch(runtime, arch, os);
             os = SetOs(runtime, os);
-            var maxVersion = GetMaxVersion(installedVersion, os, runtime, runtimeVersion);
+            var maxVersion = GetMaxVersion(installedVersion, os, runtime, runtimeVersion, excludeMajorVersions);
             var mappedBranch = GetMappedBranch(branch);
 
             return _repo.Find(mappedBranch, os, runtime, arch, installer, count, maxVersion);
@@ -96,24 +96,31 @@ namespace ServarrAPI.Model
             return os;
         }
 
-        private Version GetMaxVersion(string currentVersion, OperatingSystem os, Runtime runtime, string runtimeVersion)
+        private Version GetMaxVersion(string currentVersion, OperatingSystem os, Runtime runtime, string runtimeVersion, bool excludeMajorVersions)
         {
             var bounds = new List<Version>();
 
-            if (!string.IsNullOrWhiteSpace(currentVersion))
+            if (!string.IsNullOrWhiteSpace(currentVersion) &&
+                Version.TryParse(currentVersion, out var installedVersion))
             {
-                var installedVersion = new Version(currentVersion);
                 var maxVersion = _config.VersionGates.OrderBy(x => x.MaxVersion).FirstOrDefault(x => installedVersion <= x.MaxVersion)?.MaxUpgradeVersion;
                 if (maxVersion != null)
                 {
                     bounds.Add(maxVersion);
                 }
+
+                if (excludeMajorVersions)
+                {
+                    bounds.Add(new Version(installedVersion.Major, 99, 99, 999_999));
+                }
             }
 
             // We override mono runtime to dotnet earlier, so check for dotnet and not windows
-            if (runtime == Runtime.DotNet && os != OperatingSystem.Windows && !string.IsNullOrWhiteSpace(runtimeVersion))
+            if (runtime == Runtime.DotNet &&
+                os != OperatingSystem.Windows &&
+                !string.IsNullOrWhiteSpace(runtimeVersion) &&
+                Version.TryParse(runtimeVersion, out var monoVersion))
             {
-                var monoVersion = new Version(runtimeVersion);
                 var maxVersion = _config.MonoGates.OrderBy(x => x.MonoVersion).FirstOrDefault(x => monoVersion <= x.MonoVersion)?.MaxUpgradeVersion;
                 if (maxVersion != null)
                 {
@@ -121,12 +128,7 @@ namespace ServarrAPI.Model
                 }
             }
 
-            if (bounds.Any())
-            {
-                return bounds.Min();
-            }
-
-            return null;
+            return bounds.Any() ? bounds.Min() : null;
         }
 
         private string GetMappedBranch(string branch)
